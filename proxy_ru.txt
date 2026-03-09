@@ -1,4 +1,3 @@
-# RU Proxies (1)
-# Updated: 2026-03-09 00:57:49 UTC
+# RU Proxies (0)
+# Updated: 2026-03-09 05:14:24 UTC
 
-tg://proxy?server=92.246.139.33&port=8888&secret=eeb94b8e35905f710e8ac96be3d451931a706574726f766963682e7275

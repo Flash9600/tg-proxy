@@ -25,8 +25,8 @@ SOURCES = [
     "https://raw.githubusercontent.com/Grim1313/mtproto-for-telegram/refs/heads/master/all_proxies.txt",
     "https://raw.githubusercontent.com/ALIILAPRO/MTProtoProxy/main/mtproto.txt",
     "https://raw.githubusercontent.com/yemixzy/proxy-projects/main/proxies/mtproto.txt",
-    "https://mtpro.xyz/api/?type=mtproto",  # + MTPro.XYZ API
-    "https://mtpro.xyz/api/?type=mtproto-ru",  # RU только
+    "https://mtpro.xyz/api/?type=mtproto",
+    "https://mtpro.xyz/api/?type=mtproto-ru",
 ]
 
 TIMEOUT = 2.0
@@ -43,15 +43,15 @@ BLOCKED = ['instagram', 'facebook', 'twitter', 'bbc', 'meduza', 'linkedin', 'tor
 def get_proxies_from_text(text: str):
     proxies = set()
 
-    tg_pattern = re.compile(r'tg://proxy\?server=([^&\s]+)&port=(\d+)&secret=([A-Za-z0-9_=-]+)', re.IGNORECASE)
+    tg_pattern = re.compile(r'tg://proxy\?server=([^&\\s]+)&port=(\\d+)&secret=([A-Za-z0-9_=-]+)', re.IGNORECASE)
     for h, p, s in tg_pattern.findall(text):
         proxies.add((h, int(p), s))
 
-    tme_pattern = re.compile(r't\.me/proxy\?server=([^&\s]+)&port=(\d+)&secret=([A-Za-z0-9_=-]+)', re.IGNORECASE)
+    tme_pattern = re.compile(r't\\.me/proxy\?server=([^&\\s]+)&port=(\\d+)&secret=([A-Za-z0-9_=-]+)', re.IGNORECASE)
     for h, p, s in tme_pattern.findall(text):
         proxies.add((h, int(p), s))
 
-    simple_pattern = re.compile(r'([a-zA-Z0-9\.-]+):(\d+):([A-Fa-f0-9]{16,})')
+    simple_pattern = re.compile(r'([a-zA-Z0-9\\.-]+):(\\d+):([A-Fa-f0-9]{16,})')
     for h, p, s in simple_pattern.findall(text):
         proxies.add((h, int(p), s))
 
@@ -87,7 +87,6 @@ def decode_domain(secret: str):
         return None
 
 async def check_proxy_telethon(p):
-    """Реальная MTProto проверка через Telethon"""
     if not TELETHON_AVAILABLE or not API_ID or not API_HASH:
         return None
 
@@ -107,7 +106,7 @@ async def check_proxy_telethon(p):
     try:
         start = time.time()
         await client.connect()
-        await client.get_config()  # Проверяем связь без авторизации
+        await client.get_config()
         ping = time.time() - start
 
         region = 'eu'
@@ -124,11 +123,13 @@ async def check_proxy_telethon(p):
             'ping': ping, 'region': region, 'method': 'Telethon_OK'
         }
     except Exception:
-        await client.disconnect()
+        try:
+            await client.disconnect()
+        except:
+            pass
         return None
 
 def check_proxy_tcp(p):
-    """Fallback TCP проверка (текущая логика)"""
     host, port, secret = p
     domain = decode_domain(secret)
 
@@ -165,7 +166,6 @@ async def main_async(args):
     start_time = time.time()
     print("🚀 MTProto Proxy Collector v2.0")
 
-    # Создаём папку verified
     os.makedirs('verified', exist_ok=True)
 
     print("📥 Collecting proxies...")
@@ -184,16 +184,14 @@ async def main_async(args):
         except Exception as e:
             print(f"✗ {name}: {e}")
 
-    print(f"
-⚡ Checking {len(all_raw)} unique proxies...")
+    print(f"\n⚡ Checking {len(all_raw)} unique proxies...")
 
-    # Проверяем батчами по 50 (чтобы не перегружать)
     valid = []
     batch_size = 50
 
     if TELETHON_AVAILABLE and API_ID and API_HASH:
         print("🔥 Using Telethon MTProto check")
-        semaphore = asyncio.Semaphore(10)  # 10 одновременных
+        semaphore = asyncio.Semaphore(10)
 
         async def check_batch(batch):
             tasks = []
@@ -208,9 +206,9 @@ async def main_async(args):
             batch = list(all_raw)[i:i+batch_size]
             results = await check_batch(batch)
             valid.extend([r for r in results if r])
-            print(f"  {i+len([r for r in results if r])}/{i+batch_size}")
+            print(f"  {i+sum(1 for r in results if r)}/{i+len(batch)}")
     else:
-        print("📡 Using TCP ping (install telethon for full MTProto check)")
+        print("📡 Using TCP ping (set API_ID/API_HASH for Telethon)")
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as exc:
             futures = {exc.submit(check_proxy_tcp, p): p for p in all_raw}
             for f in concurrent.futures.as_completed(futures):
@@ -221,9 +219,6 @@ async def main_async(args):
     ru = sorted([x for x in valid if x['region'] == 'ru'], key=lambda x: x['ping'])
     eu = sorted([x for x in valid if x['region'] == 'eu'], key=lambda x: x['ping'])
 
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-
-    # Сохраняем в verified/
     files = {
         'verified/proxy_ru_verified.txt': ru,
         'verified/proxy_eu_verified.txt': eu,
@@ -231,20 +226,21 @@ async def main_async(args):
     }
 
     for filename, proxies_list in files.items():
+        region_name = 'RU' if 'ru' in filename else 'EU' if 'eu' in filename else 'All'
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write(f"# Verified {'RU' if 'ru' in filename else 'EU' if 'eu' in filename else 'All'} Proxies ({len(proxies_list)})\n")
+            f.write(f"# Verified {region_name} Proxies ({len(proxies_list)})\n")
             f.write(f"# Updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-            f.write(f"# Method: {proxies_list[0]['method'] if proxies_list else 'N/A'}\n\n")
+            if proxies_list:
+                f.write(f"# Method: {proxies_list[0]['method']}\n")
+            f.write("\n")
             f.write('\n'.join([x['link'] for x in proxies_list[:args.top] if args.top else proxies_list]))
 
-    # t.me формат
     with open('verified/proxy_all_tme_verified.txt', 'w', encoding='utf-8') as f:
         f.write(f"# Verified Proxies t.me format ({len(valid)})\n")
         f.write(f"# Updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n")
         for x in valid[:args.top] if args.top else valid:
             f.write(make_tme_link(x['host'], x['port'], x['secret']) + '\n')
 
-    # Расширенная статистика
     stats = {
         'timestamp_utc': datetime.utcnow().isoformat(),
         'total_raw': len(all_raw),
@@ -261,8 +257,7 @@ async def main_async(args):
     with open('verified/proxy_stats_verified.json', 'w') as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
 
-    print(f"
-✅ VERIFIED: RU={len(ru)}, EU={len(eu)}, TOTAL={len(valid)}")
+    print(f"\n✅ VERIFIED: RU={len(ru)}, EU={len(eu)}, TOTAL={len(valid)}")
     print(f"📁 Saved to verified/ folder")
     print(f"⏱️ Time: {stats['execution_time']}s")
 

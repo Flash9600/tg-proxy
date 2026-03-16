@@ -1,6 +1,6 @@
 # Verified RU Proxies (1)
-# Updated: 2026-03-16 12:38:53 UTC
+# Updated: 2026-03-16 16:48:01 UTC
 # Method: TCP_OK
-# Best ping: 0.089s
+# Best ping: 0.155s
 
 tg://proxy?server=utkapay.life&port=443&secret=eec0ab2dc91cd75da14bf8bde752ca8222766473696e612e7275

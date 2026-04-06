@@ -13,7 +13,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: linear-gradient(145deg, #f5f7fc 0%, #e9eef4 100%);
+            background: linear-gradient(145deg, #19223b 0%, #225899 100%);
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             display: flex;
             flex-direction: column;
@@ -22,10 +22,9 @@
         }
 
         .control-panel {
-            background: rgba(255, 255, 255, 0.75);
+            background: #172037;
             backdrop-filter: blur(12px);
             border-radius: 64px;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
             padding: 0.5rem 1rem 0.5rem 2rem;
             display: inline-flex;
             align-items: center;
@@ -33,7 +32,7 @@
             flex-wrap: wrap;
             justify-content: center;
             margin-top: 2vh;
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(109, 109, 109, 0.75);
         }
 
         .trigger-btn {
@@ -51,6 +50,18 @@
             transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
             touch-action: manipulation;
+        }
+
+        .disable {
+            background: #24262a;
+            color: rgb(162, 160, 160);
+            cursor: none;
+            touch-action: none;
+        }
+
+        .trigger-disable:active {
+            transform: scale(0.96);
+            background: #1f2a48;
         }
 
         .trigger-btn:active {
@@ -720,6 +731,8 @@
 
                 if (showRefreshIndicator) {
                     setTimeout(() => {
+                        triggerBtn.classList.remove('disable');
+                        triggerBtn.disabled = false;
                         refreshIndicator.innerHTML = '';
                     }, 2000);
                 }
@@ -728,7 +741,7 @@
             // Запуск мониторинга статуса workflow
             async function startStatusMonitoring(runId) {
                 if (statusCheckInterval) {
-                    clearInterval(statusCheckInterval);
+                    clearTimeout(statusCheckInterval);
                 }
                 if (statusCheckTimeout) {
                     clearTimeout(statusCheckTimeout);
@@ -737,40 +750,60 @@
                 updateStatusBadge('queued');
 
                 const pollStatus = async () => {
-                    const runData = await checkWorkflowStatus(runId);
-                    if (!runData) return;
+                    if (!statusCheckInterval) {
+                        updateStatusBadge('completed');
+                        stopStopwatch();
+                        addLogEntry('✅ Успех', 200, `Workflow завершён успешно! Загружаем свежие данные...`, null);
+                        // Обновляем данные
+                        await loadAllData(true);
+                        isUpdating = false;
+                        return;
+                    }
 
-                    if (runData.status === 'completed') {
-                        clearInterval(statusCheckInterval);
-                        statusCheckInterval = null;
+                    const metadata = await loadMetadata();
+                    let formattedDate = metadata.timestamp_utc;
+                    try {
+                        const date = new Date(timestamp).getTime();
+                        let nowDate = new Date();
+                        nowDate.setMinutes(nowDate.getMinutes() - 1);
 
-                        if (runData.conclusion === 'success') {
+                        if (date > nowDate.getTime()) {
+                            clearInterval(statusCheckInterval);
+                            statusCheckInterval = null;
                             updateStatusBadge('completed');
                             stopStopwatch();
                             addLogEntry('✅ Успех', 200, `Workflow завершён успешно! Загружаем свежие данные...`, null);
                             // Обновляем данные
                             await loadAllData(true);
                             isUpdating = false;
+
                         } else {
-                            updateStatusBadge('failure', `❌ ${runData.conclusion}`);
-                            stopStopwatch();
-                            addLogEntry('❌ Ошибка', 200, `Workflow завершён с ошибкой: ${runData.conclusion}`, null, true);
-                            isUpdating = false;
+                            updateStatusBadge('in_progress');
                         }
-                    } else if (runData.status === 'queued') {
-                        updateStatusBadge('queued');
-                    } else if (runData.status === 'in_progress') {
-                        updateStatusBadge('in_progress');
+                    } catch (e) {
+                        updateStatusBadge('failure', `❌ ${runData.conclusion}`);
+                        stopStopwatch();
+                        addLogEntry('❌ Ошибка', 200, `Workflow завершён с ошибкой: ${runData.conclusion}`, null, true);
+                        isUpdating = false;
                     }
                 };
 
-                addLogEntry('Мониторинг', null, `Ожидание 20 секунд перед началом проверки статуса...`, null);
+                addLogEntry('Мониторинг', null, `Ожидание 25 секунд перед началом проверки статуса...`, null);
                 statusCheckTimeout = setTimeout(() => {
                     addLogEntry('Мониторинг', null, `Начинаем проверку статуса каждые 2 секунды (run_id: ${runId})`, null);
+                    updateStatusBadge('in_progress');
                     pollStatus();
-                    statusCheckInterval = setInterval(pollStatus, 4000);
+                    let intervalCount = 0
+                    statusCheckInterval = setInterval(() => {
+                        if (intervalCount == 5) {
+                            clearInterval(statusCheckInterval);
+                            statusCheckInterval = null;
+                        }
+                        pollStatus()
+                        intervalCount++
+                    }, 5000);
                     statusCheckTimeout = null;
-                }, 20000);
+                }, 25000);
             }
 
             function stopMonitoring() {
@@ -779,7 +812,7 @@
                     statusCheckInterval = null;
                 }
                 if (statusCheckTimeout) {
-                    clearTimeout(statusCheckTimeout);
+                    clearInterval(statusCheckTimeout);
                     statusCheckTimeout = null;
                 }
             }
@@ -844,7 +877,6 @@
                             });
 
                             if (runsResponse.ok) {
-
                                 const runsData = await runsResponse.json();
                                 if (runsData.workflow_runs && runsData.workflow_runs.length > 0) {
                                     currentRunId = runsData.workflow_runs[0].id;
@@ -888,6 +920,8 @@
 
             // Обработчик нажатия
             function onTrigger() {
+                triggerBtn.classList.add('disable');
+                triggerBtn.disabled = true;
                 triggerWorkflow();
             }
 

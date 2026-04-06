@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Proxy Manager + GitHub Workflow</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #f5f7fc 0%, #e9eef4 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 64px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+            padding: 0.5rem 1rem 0.5rem 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 2vh;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .trigger-btn {
+            background: #0a0f1e;
+            border: none;
+            padding: 1rem 2.2rem;
+            border-radius: 60px;
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+            touch-action: manipulation;
+        }
+
+        .trigger-btn:active {
+            transform: scale(0.96);
+            background: #1f2a48;
+        }
+
+        @media (hover: hover) {
+            .trigger-btn:hover {
+                background: #1f2a48;
+                transform: translateY(-2px);
+            }
+        }
+
+        .stopwatch {
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            background: #0f1422;
+            padding: 0.3rem 1rem;
+            border-radius: 48px;
+            color: #bbf0ff;
+            text-shadow: 0 0 5px #00ccff80;
+            letter-spacing: 2px;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .status-badge {
+            background: #2d3748;
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+
+        .status-success {
+            background: #064e3b;
+            color: #4ade80;
+        }
+
+        .status-pending {
+            background: #451a03;
+            color: #facc15;
+        }
+
+        .status-failure {
+            background: #7f1a1a;
+            color: #f87171;
+        }
+
+        .log-area,
+        .proxies-area {
+            margin-top: 1.5rem;
+            width: 100%;
+            max-width: 1300px;
+            background: #0b0e17cc;
+            backdrop-filter: blur(8px);
+            border-radius: 2rem;
+            padding: 1rem 1.5rem;
+            border: 1px solid #2c344b;
+        }
+
+        .log-title,
+        .proxies-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+            color: #9aa4bf;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .log-header {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .log-header:hover {
+            opacity: 0.8;
+        }
+
+        .toggle-icon {
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .log-content {
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-size: 0.85rem;
+            background: #010114;
+            padding: 1rem;
+            border-radius: 1.2rem;
+            color: #d6deff;
+            word-break: break-all;
+            white-space: pre-wrap;
+            border-left: 3px solid #3b82f6;
+            max-height: 300px;
+            overflow-y: auto;
+            transition: all 0.2s;
+        }
+
+        .log-content.hidden {
+            display: none;
+        }
+
+        .metadata-bar {
+            background: #1a1f2e;
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            border: 1px solid #2c344b;
+        }
+
+        .metadata-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metadata-label {
+            color: #9aa4bf;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .metadata-value {
+            color: #bbf0ff;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .proxies-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .proxies-table th {
+            text-align: left;
+            padding: 0.75rem 0.5rem;
+            background: #1a1f2e;
+            color: #9aa4bf;
+            border-bottom: 2px solid #2c344b;
+        }
+
+        .proxies-table td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid #2a3452;
+            color: #d6deff;
+        }
+
+        .proxies-table tr:hover {
+            background: #1a1f2e;
+        }
+
+        .proxy-link {
+            color: #80e0ff;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .proxy-link:hover {
+            text-decoration: underline;
+        }
+
+        .ping-low {
+            color: #4ade80;
+        }
+
+        .ping-mid {
+            color: #facc15;
+        }
+
+        .ping-high {
+            color: #f87171;
+        }
+
+        .badge {
+            background: #3b82f6;
+            border-radius: 40px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .refresh-indicator {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: #6e7a9e;
+        }
+
+        @media (max-width: 700px) {
+            .control-panel {
+                gap: 1rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .stopwatch {
+                font-size: 1.4rem;
+                min-width: 120px;
+            }
+
+            .trigger-btn {
+                padding: 0.7rem 1.4rem;
+                font-size: 1rem;
+            }
+
+            .proxies-table {
+                font-size: 0.7rem;
+            }
+
+            .proxies-table td,
+            .proxies-table th {
+                padding: 0.4rem 0.3rem;
+            }
+
+            .metadata-bar {
+                gap: 0.8rem;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #3b82f6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="control-panel">
+        <button class="trigger-btn" id="triggerWorkflowBtn">
+            🚀 Обновить прокси
+        </button>
+        <div class="stopwatch" id="stopwatchDisplay">0.00 сек</div>
+        <div class="status-badge" id="statusBadge">⚪ Ожидание</div>
+    </div>
+
+    <div class="log-area">
+        <div class="log-title">
+            <div class="log-header" id="logHeader">
+                <span class="toggle-icon" id="toggleIcon">▶</span>
+                <span class="badge">📡 Лог HTTP запросов</span>
+                <span style="font-size:0.7rem;">(нажмите чтобы раскрыть)</span>
+            </div>
+        </div>
+        <div class="log-content hidden" id="logContainer">
+            <span class="log-empty">⏳ Логи будут появляться здесь</span>
+        </div>
+    </div>
+
+    <div class="proxies-area" id="proxiesArea">
+        <div class="proxies-title">
+            <span class="badge">🚀 Доступные прокси</span>
+            <span id="proxiesCount"></span>
+            <span class="refresh-indicator" id="refreshIndicator"></span>
+        </div>
+        <div id="metadataContainer"></div>
+        <div id="proxiesContent">
+            <div class="loading-spinner"></div> Загрузка...
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ========== НАСТРОЙКИ (ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ) ==========
+            const GITHUB_TOKEN = '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';
+            const OWNER = "Flash9600";               // <-- Владелец репозитория
+            const REPO = "tg-proxy";            // <-- Название репозитория
+            const WORKFLOW_ID = "update.yml";      // <-- Имя файла workflow (или numeric id)
+            const REF_BRANCH = "main";             // <-- Ветка (ref)
+            const FOLDER_TO_CHECK = "verified";      // <-- Папка, содержимое которой нужно показать после завершения workflow
+
+
+            const PROXIES_JSON_PATH = "verified/proxy_all_verified.json";      // <-- Путь к JSON файлу с прокси
+            const META_JSON_PATH = "verified/proxy_stats_verified.json";            // <-- Путь к JSON файлу с метаданными
+            // ========================================================
+
+            // DOM элементы
+            const triggerBtn = document.getElementById('triggerWorkflowBtn');
+            const stopwatchSpan = document.getElementById('stopwatchDisplay');
+            const logContainer = document.getElementById('logContainer');
+            const statusBadge = document.getElementById('statusBadge');
+            const proxiesContent = document.getElementById('proxiesContent');
+            const proxiesCountSpan = document.getElementById('proxiesCount');
+            const metadataContainer = document.getElementById('metadataContainer');
+            const refreshIndicator = document.getElementById('refreshIndicator');
+            const logHeader = document.getElementById('logHeader');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            // Состояние логов (скрыты по умолчанию)
+            let logsVisible = false;
+
+            // Переменные для отслеживания workflow
+            let currentRunId = null;
+            let statusCheckInterval = null;
+            let statusCheckTimeout = null;
+            let workflowStartTime = null;
+            let workflowCompletedTime = null;
+            let isUpdating = false;
+
+            // Функция для переключения видимости логов
+            function toggleLogs() {
+                logsVisible = !logsVisible;
+                if (logsVisible) {
+                    logContainer.classList.remove('hidden');
+                    toggleIcon.textContent = '▼';
+                } else {
+                    logContainer.classList.add('hidden');
+                    toggleIcon.textContent = '▶';
+                }
+            }
+
+            // Добавляем обработчик на заголовок логов
+            logHeader.addEventListener('click', toggleLogs);
+
+            // Секундомер
+            function formatStopwatch(seconds) {
+                return seconds.toFixed(2) + " сек";
+            }
+
+            let timerAnimationId = null;
+
+            function updateStopwatchDisplay() {
+                if (workflowStartTime === null) {
+                    return;
+                }
+                const endTime = workflowCompletedTime || performance.now();
+                const elapsed = (endTime - workflowStartTime) / 1000;
+                stopwatchSpan.textContent = formatStopwatch(elapsed);
+                if (workflowCompletedTime === null) {
+                    timerAnimationId = requestAnimationFrame(updateStopwatchDisplay);
+                }
+            }
+
+            function startStopwatch() {
+                workflowStartTime = performance.now();
+                workflowCompletedTime = null;
+                if (timerAnimationId) {
+                    cancelAnimationFrame(timerAnimationId);
+                }
+                updateStopwatchDisplay();
+            }
+
+            function stopStopwatch() {
+                workflowCompletedTime = performance.now();
+                if (timerAnimationId) {
+                    cancelAnimationFrame(timerAnimationId);
+                }
+                if (workflowStartTime) {
+                    const elapsed = (workflowCompletedTime - workflowStartTime) / 1000;
+                    stopwatchSpan.textContent = formatStopwatch(elapsed);
+                }
+            }
+
+            function resetStopwatch() {
+                workflowStartTime = null;
+                workflowCompletedTime = null;
+                if (timerAnimationId) {
+                    cancelAnimationFrame(timerAnimationId);
+                }
+                stopwatchSpan.textContent = formatStopwatch(0);
+            }
+
+            // Логирование
+            function addLogEntry(url, statusCode, responseBody = null, errorMsg = null) {
+                const timestamp = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+                const logEntryDiv = document.createElement('div');
+                logEntryDiv.style.marginBottom = '12px';
+                logEntryDiv.style.borderBottom = '1px solid #2a3452';
+                logEntryDiv.style.paddingBottom = '8px';
+
+                let content = `<span style="color:#b9c7ff;">[${timestamp}]</span> `;
+                content += `<span style="color:#f0f0f0;">➜ URL:</span> <span style="color:#80e0ff;">${escapeHtml(url)}</span><br>`;
+                content += `<span style="color:#f0f0f0;">➜ HTTP статус:</span> <strong style="color:#facc15;">${statusCode || '—'}</strong><br>`;
+
+                if (responseBody !== undefined && responseBody !== null) {
+                    let bodyStr = typeof responseBody === 'object' ? JSON.stringify(responseBody, null, 2) : String(responseBody);
+                    if (bodyStr.length > 450) bodyStr = bodyStr.substring(0, 450) + '… (обрезано)';
+                    content += `<span style="color:#f0f0f0;">➜ тело ответа:</span> <span style="color:#bbd9ff;">${escapeHtml(bodyStr)}</span><br>`;
+                }
+                if (errorMsg) {
+                    content += `<span style="color:#ffa5a5;">❌ ${escapeHtml(errorMsg)}</span><br>`;
+                }
+
+                logEntryDiv.innerHTML = content;
+
+                const placeholder = logContainer.querySelector('.log-empty');
+                if (placeholder && logContainer.children.length === 1 && placeholder.classList.contains('log-empty')) {
+                    logContainer.innerHTML = '';
+                }
+
+                logContainer.prepend(logEntryDiv);
+                while (logContainer.children.length > 30) {
+                    logContainer.removeChild(logContainer.lastChild);
+                }
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/[&<>]/g, function (m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+
+            // Обновление статус-бейджа
+            function updateStatusBadge(status, message = '') {
+                let statusText = '';
+                let statusClass = '';
+                switch (status) {
+                    case 'queued':
+                        statusText = '⏳ В очереди';
+                        statusClass = 'status-pending';
+                        break;
+                    case 'in_progress':
+                        statusText = '🔄 Выполняется';
+                        statusClass = 'status-pending';
+                        break;
+                    case 'completed':
+                        statusText = '✅ Завершён';
+                        statusClass = 'status-success';
+                        break;
+                    case 'failure':
+                        statusText = '❌ Ошибка';
+                        statusClass = 'status-failure';
+                        break;
+                    default:
+                        statusText = message || '⚪ Ожидание';
+                        statusClass = '';
+                }
+                statusBadge.innerHTML = statusText;
+                statusBadge.className = `status-badge ${statusClass}`;
+            }
+
+            // Загрузка метаданных
+            async function loadMetadata() {
+                const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${META_JSON_PATH}?ref=${REF_BRANCH}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Accept': 'application/vnd.github+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        }
+                    });
+
+                    addLogEntry(apiUrl, response.status, null, null);
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            metadataContainer.innerHTML = '<div class="metadata-item"><span class="metadata-label">⚠️ meta.json не найден</span></div>';
+                        }
+                        return null;
+                    }
+
+                    const data = await response.json();
+                    const content = atob(data.content);
+                    return JSON.parse(content);
+
+                } catch (error) {
+                    addLogEntry(apiUrl, null, null, `Ошибка загрузки метаданных: ${error.message}`);
+                    return null;
+                }
+            }
+
+            // Загрузка прокси из JSON файла
+            async function loadProxies() {
+                const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PROXIES_JSON_PATH}?ref=${REF_BRANCH}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Accept': 'application/vnd.github+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        }
+                    });
+
+                    addLogEntry(apiUrl, response.status, null, null);
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            proxiesContent.innerHTML = '<span style="color:#f87171;">❌ Файл proxies.json не найден в репозитории</span>';
+                        } else {
+                            proxiesContent.innerHTML = `<span style="color:#f87171;">❌ Ошибка загрузки: ${response.status}</span>`;
+                        }
+                        return [];
+                    }
+
+                    const data = await response.json();
+                    const content = atob(data.content);
+                    const proxiesArray = JSON.parse(content);
+
+                    return Array.isArray(proxiesArray) ? proxiesArray : [];
+
+                } catch (error) {
+                    addLogEntry(apiUrl, null, null, `Ошибка загрузки прокси: ${error.message}`);
+                    proxiesContent.innerHTML = `<span style="color:#f87171;">❌ Ошибка: ${escapeHtml(error.message)}</span>`;
+                    return [];
+                }
+            }
+
+            // Отображение метаданных
+            function renderMetadata(metadata) {
+                if (!metadata) {
+                    metadataContainer.innerHTML = '<div class="metadata-item"><span class="metadata-label">⚠️ Нет данных</span></div>';
+                    return;
+                }
+
+                const timestamp = metadata.timestamp_utc || 'Неизвестно';
+                const totalRaw = metadata.total_raw || 0;
+                const totalVerified = metadata.total_verified || 0;
+
+                // Форматируем дату
+                let formattedDate = timestamp;
+                if (timestamp !== 'Неизвестно') {
+                    try {
+                        const date = new Date(timestamp);
+                        formattedDate = date.toLocaleString('ru-RU');
+                    } catch (e) { }
+                }
+
+                metadataContainer.innerHTML = `
+                <div class="metadata-bar">
+                    <div class="metadata-item">
+                        <span class="metadata-label">📅 Последнее обновление:</span>
+                        <span class="metadata-value">${escapeHtml(formattedDate)}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="metadata-label">📊 Всего сырых прокси:</span>
+                        <span class="metadata-value">${totalRaw}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="metadata-label">✅ Валидных прокси:</span>
+                        <span class="metadata-value">${totalVerified}</span>
+                    </div>
+                </div>
+            `;
+            }
+
+            // Отображение таблицы прокси
+            function renderProxiesTable(proxiesArray) {
+                if (!proxiesArray || proxiesArray.length === 0) {
+                    proxiesContent.innerHTML = '<span>📭 Нет доступных прокси</span>';
+                    proxiesCountSpan.innerHTML = '(0)';
+                    return;
+                }
+
+                // Сортируем по ping
+                const sorted = [...proxiesArray].sort((a, b) => (a.ping || Infinity) - (b.ping || Infinity));
+
+                proxiesCountSpan.innerHTML = `(${sorted.length})`;
+
+                // Функция для определения класса ping
+                function getPingClass(ping) {
+                    if (ping === null || ping === undefined) return 'ping-mid';
+                    if (ping < 0.05) return 'ping-low';
+                    if (ping < 0.2) return 'ping-mid';
+                    return 'ping-high';
+                }
+
+                // Форматирование ping
+                function formatPing(ping) {
+                    if (ping === null || ping === undefined) return '—';
+                    if (ping < 0.001) return '<0.001';
+                    return ping.toFixed(3);
+                }
+
+                let tableHtml = `
+                <table class="proxies-table">
+                    <thead>
+                        <tr>
+                            <th>Регион</th>
+                            <th>Ping (сек)</th>
+                            <th>Ссылка для Telegram</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+                for (const proxy of sorted) {
+                    let webLink = proxy.link || '';
+
+                    const region = proxy.region || 'unknown';
+                    const ping = proxy.ping;
+                    const pingClass = getPingClass(ping);
+                    const pingDisplay = formatPing(ping);
+
+                    tableHtml += `
+                    <tr>
+                        <td>${escapeHtml(region.toUpperCase())}</td>
+                        <td class="${pingClass}">${pingDisplay}</td>
+                        <td><a href="${escapeHtml(webLink)}"  class="proxy-link">${escapeHtml(webLink)}</a></td>
+                    </tr>
+                `;
+                }
+
+                tableHtml += `
+                    </tbody>
+                </table>
+            `;
+
+                proxiesContent.innerHTML = tableHtml;
+            }
+
+            // Основная функция загрузки всех данных
+            async function loadAllData(showRefreshIndicator = false) {
+                if (showRefreshIndicator) {
+                    refreshIndicator.innerHTML = '<span class="loading-spinner"></span> Обновление...';
+                }
+
+                // Загружаем метаданные
+                const metadata = await loadMetadata();
+                renderMetadata(metadata);
+
+                // Загружаем прокси
+                const proxies = await loadProxies();
+                renderProxiesTable(proxies);
+
+                if (showRefreshIndicator) {
+                    setTimeout(() => {
+                        refreshIndicator.innerHTML = '';
+                    }, 2000);
+                }
+            }
+
+            // Запуск мониторинга статуса workflow
+            async function startStatusMonitoring(runId) {
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                }
+                if (statusCheckTimeout) {
+                    clearTimeout(statusCheckTimeout);
+                }
+
+                updateStatusBadge('queued');
+
+                const pollStatus = async () => {
+                    const runData = await checkWorkflowStatus(runId);
+                    if (!runData) return;
+
+                    if (runData.status === 'completed') {
+                        clearInterval(statusCheckInterval);
+                        statusCheckInterval = null;
+
+                        if (runData.conclusion === 'success') {
+                            updateStatusBadge('completed');
+                            stopStopwatch();
+                            addLogEntry('✅ Успех', 200, `Workflow завершён успешно! Загружаем свежие данные...`, null);
+                            // Обновляем данные
+                            await loadAllData(true);
+                            isUpdating = false;
+                        } else {
+                            updateStatusBadge('failure', `❌ ${runData.conclusion}`);
+                            stopStopwatch();
+                            addLogEntry('❌ Ошибка', 200, `Workflow завершён с ошибкой: ${runData.conclusion}`, null, true);
+                            isUpdating = false;
+                        }
+                    } else if (runData.status === 'queued') {
+                        updateStatusBadge('queued');
+                    } else if (runData.status === 'in_progress') {
+                        updateStatusBadge('in_progress');
+                    }
+                };
+
+                addLogEntry('Мониторинг', null, `Ожидание 20 секунд перед началом проверки статуса...`, null);
+                statusCheckTimeout = setTimeout(() => {
+                    addLogEntry('Мониторинг', null, `Начинаем проверку статуса каждые 2 секунды (run_id: ${runId})`, null);
+                    pollStatus();
+                    statusCheckInterval = setInterval(pollStatus, 4000);
+                    statusCheckTimeout = null;
+                }, 20000);
+            }
+
+            function stopMonitoring() {
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                    statusCheckInterval = null;
+                }
+                if (statusCheckTimeout) {
+                    clearTimeout(statusCheckTimeout);
+                    statusCheckTimeout = null;
+                }
+            }
+
+            // Запуск workflow через API
+            async function triggerWorkflow() {
+                if (isUpdating) {
+                    addLogEntry('⚠️ Предупреждение', null, null, 'Обновление уже выполняется, подождите');
+                    return;
+                }
+
+                isUpdating = true;
+
+                // Проверка конфигурации
+                if (!GITHUB_TOKEN || GITHUB_TOKEN === "github_pat_ваш_токен") {
+                    addLogEntry("(config)", "⚠️ Токен не задан", null, "Укажите корректный GITHUB_TOKEN в коде страницы");
+                    isUpdating = false;
+                    return;
+                }
+                if (OWNER === "ваш_username" || REPO === "ваш_репозиторий") {
+                    addLogEntry("(config)", "⚠️ Демо-репозиторий", null, "Замените OWNER/REPO на свои!");
+                    isUpdating = false;
+                    return;
+                }
+
+                stopMonitoring();
+
+                const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/dispatches`;
+
+                const payload = { ref: REF_BRANCH };
+
+                startStopwatch();
+                updateStatusBadge('queued', 'Запуск...');
+
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (response.status === 204) {
+                        addLogEntry(apiUrl, 204, "✅ Workflow успешно поставлен в очередь", null);
+                        setTimeout(async () => {
+                            // Получаем последний запуск
+                            const runsUrl = `https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?branch=${REF_BRANCH}&per_page=1`;
+                            const runsResponse = await fetch(runsUrl, {
+                                headers: {
+                                    'Accept': 'application/vnd.github+json',
+                                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                                }
+                            });
+
+                            if (runsResponse.ok) {
+
+                                const runsData = await runsResponse.json();
+                                if (runsData.workflow_runs && runsData.workflow_runs.length > 0) {
+                                    currentRunId = runsData.workflow_runs[0].id;
+                                    addLogEntry(runsUrl, runsResponse.status, `Найден run_id: ${currentRunId}`, null);
+                                    await startStatusMonitoring(currentRunId);
+                                } else {
+                                    addLogEntry(runsUrl, runsResponse.status, null, "Не удалось получить run_id");
+                                    updateStatusBadge('failure', 'Не найден ID запуска');
+                                    stopStopwatch();
+                                    isUpdating = false;
+                                }
+                            } else {
+                                addLogEntry(runsUrl, runsResponse.status, null, "Не удалось получить список запусков");
+                                updateStatusBadge('failure', 'Ошибка получения ID');
+                                stopStopwatch();
+                                isUpdating = false;
+                            }
+                        }, 3000);
+                    } else {
+                        let errorBody = null;
+                        try {
+                            errorBody = await response.json();
+                        } catch (e) { }
+                        addLogEntry(apiUrl, response.status, errorBody, `Ошибка запуска workflow: ${response.status}`);
+                        updateStatusBadge('failure', `Ошибка ${response.status}`);
+                        stopStopwatch();
+                        isUpdating = false;
+                    }
+
+                } catch (err) {
+                    stopStopwatch();
+                    if (err.name === 'AbortError') {
+                        addLogEntry(apiUrl, null, null, 'Превышен таймаут (15 сек)');
+                    } else {
+                        addLogEntry(apiUrl, null, null, `Ошибка: ${err.message}`);
+                    }
+                    updateStatusBadge('failure', 'Сетевая ошибка');
+                    isUpdating = false;
+                }
+            }
+
+            // Обработчик нажатия
+            function onTrigger() {
+                triggerWorkflow();
+            }
+
+            triggerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                onTrigger();
+            });
+
+            triggerBtn.addEventListener('touchstart', (e) => {
+                triggerBtn.style.transform = 'scale(0.96)';
+                setTimeout(() => {
+                    if (triggerBtn) triggerBtn.style.transform = '';
+                }, 120);
+                e.preventDefault();
+                onTrigger();
+            }, { passive: false });
+
+            // Загружаем данные при старте
+            loadAllData(false);
+
+            addLogEntry("--- Система ---", "готов", "Логи HTTP запросов скрыты. Нажмите на заголовок для отображения.", null);
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,8 +1,9 @@
-# Verified RU Proxies (3)
-# Updated: 2026-05-15 17:28:13 UTC
+# Verified RU Proxies (4)
+# Updated: 2026-05-15 21:01:54 UTC
 # Method: TCP_OK
-# Best ping: 0.148s
+# Best ping: 0.179s
 
-tg://proxy?server=mt.corph.ru&port=443&secret=ee2ed7517b077ef414e24b106e0729335d6d742e636f7270682e7275
-tg://proxy?server=tproxyru.live.&port=8980&secret=ee104462821249bd7ac519130220c25d09617669746f2e7275
+tg://proxy?server=147.45.79.141&port=443&secret=eefcd14518ed9188502624ba211abbebb4766b2e636f6d
 tg://proxy?server=connect.tproxyru.live&port=8980&secret=ee104462821249bd7ac519130220c25d09617669746f2e7275
+tg://proxy?server=tproxyru.live.&port=8980&secret=ee104462821249bd7ac519130220c25d09617669746f2e7275
+tg://proxy?server=mt.corph.ru&port=443&secret=ee2ed7517b077ef414e24b106e0729335d6d742e636f7270682e7275

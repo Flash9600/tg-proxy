@@ -1,3 +1,6 @@
-# Verified RU Proxies (0)
-# Updated: 2026-06-16 12:53:45 UTC
+# Verified RU Proxies (1)
+# Updated: 2026-06-16 19:37:01 UTC
+# Method: TCP_OK
+# Best ping: 0.193s
 
+tg://proxy?server=fat.slarkfat.icu&port=443&secret=ee8b5ecd05d1a2959d07adcad01f4fcda9617669746f2e7275

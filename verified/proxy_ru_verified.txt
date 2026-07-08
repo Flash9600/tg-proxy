@@ -1,6 +1,3 @@
-# Verified RU Proxies (1)
-# Updated: 2026-07-08 02:43:20 UTC
-# Method: TCP_OK
-# Best ping: 0.223s
+# Verified RU Proxies (0)
+# Updated: 2026-07-08 06:28:04 UTC
 
-tg://proxy?server=s04.neo-trading.org&port=443&secret=ee2e7c3d85e469cb8f825f4678a716a363706574726f766963682e7275

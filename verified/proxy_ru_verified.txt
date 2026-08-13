@@ -1,6 +1,7 @@
-# Verified RU Proxies (1)
-# Updated: 2026-08-13 01:58:29 UTC
+# Verified RU Proxies (2)
+# Updated: 2026-08-13 05:39:56 UTC
 # Method: TCP_OK
-# Best ping: 0.169s
+# Best ping: 0.13s
 
+tg://proxy?server=gamerpr.cfd&port=8880&secret=ee6a0333c1db3f8eaba5c76731a44203b6617669746f2e7275
 tg://proxy?server=dev.nowabst.net&port=853&secret=ee54079943a5db4dc9163650c09dfc806d766b2e636f6d

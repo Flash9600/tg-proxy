@@ -1,11 +1,9 @@
-# Verified RU Proxies (6)
-# Updated: 2026-08-30 22:26:24 UTC
+# Verified RU Proxies (4)
+# Updated: 2026-08-31 04:03:43 UTC
 # Method: TCP_OK
-# Best ping: 0.199s
+# Best ping: 0.14s
 
-tg://proxy?server=megaconnect.click&port=443&secret=ee283d3bf19b80aa8a9ca06a2244c01c8a617669746f2e7275
-tg://proxy?server=proxtstar.live&port=443&secret=eed21e15e0d7df3d811a11e2accff34eec617669746f2e7275
-tg://proxy?server=s4.assetflux.org&port=443&secret=eed9cf709eb48bb5a37471fba84864bd7e766b2e7275
-tg://proxy?server=freeconnect.lol&port=443&secret=eef7a565db46f8f5bf156054d86db42969617669746f2e7275
 tg://proxy?server=nyakawai.shop&port=443&secret=eefddb26d5047ce1787ece232a57832391617669746f2e7275
-tg://proxy?server=media9.happtg.org&port=443&secret=ee2e7c3d85e469cb8f825f4678a716a363706574726f766963682e7275
+tg://proxy?server=freeconnect.lol&port=443&secret=eef7a565db46f8f5bf156054d86db42969617669746f2e7275
+tg://proxy?server=megaconnect.click&port=443&secret=ee283d3bf19b80aa8a9ca06a2244c01c8a617669746f2e7275
+tg://proxy?server=cdn7.cdnwave.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e6f7a6f6e2e7275

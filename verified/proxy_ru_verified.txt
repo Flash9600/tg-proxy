@@ -1,6 +1,3 @@
-# Verified RU Proxies (1)
-# Updated: 2026-09-04 15:51:57 UTC
-# Method: TCP_OK
-# Best ping: 0.145s
+# Verified RU Proxies (0)
+# Updated: 2026-09-04 18:50:48 UTC
 
-tg://proxy?server=proxtstar.live&port=443&secret=eed21e15e0d7df3d811a11e2accff34eec617669746f2e7275

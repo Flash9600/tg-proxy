@@ -1,7 +1,3 @@
-# Verified RU Proxies (2)
-# Updated: 2026-11-08 20:13:54 UTC
-# Method: TCP_OK
-# Best ping: 0.109s
+# Verified RU Proxies (0)
+# Updated: 2026-11-09 04:56:04 UTC
 
-tg://proxy?server=shared4.ddproxy.xyz&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275
-tg://proxy?server=de-p1.h1cloud.net&port=25153&secret=ee0c63bf0d9b4a6cb5455e677bad52bf8b6d61782e7275

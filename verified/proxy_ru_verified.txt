@@ -1,6 +1,6 @@
 # Verified RU Proxies (1)
-# Updated: 2026-11-10 02:33:55 UTC
+# Updated: 2026-11-10 12:11:25 UTC
 # Method: TCP_OK
-# Best ping: 0.172s
+# Best ping: 0.227s
 
 tg://proxy?server=tg2.fkwallet.online&port=443&secret=ee143d5e3b77f7240638906d3c55cdf050706574726f766963682e7275

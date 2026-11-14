@@ -1,6 +1,6 @@
 # Verified RU Proxies (1)
-# Updated: 2026-11-14 00:41:40 UTC
+# Updated: 2026-11-14 11:14:07 UTC
 # Method: TCP_OK
-# Best ping: 0.159s
+# Best ping: 0.554s
 
-tg://proxy?server=shared1.ddproxy.xyz&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275
+tg://proxy?server=demo.white-bars.ru&port=443&secret=ee12f392b7ee1dd989907a3dbdac0e523964656d6f2e77686974652d626172732e7275
